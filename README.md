@@ -1,4 +1,4 @@
-# Generate annotated dataset
+# Generate Annotated Datasets With BeamNGpy
 
 This is a script with which you can generate your own datasets with semantic annotation.
 The possible settings and options are documented in `generate_annotated_dataset.py`.
