@@ -10,7 +10,7 @@ from tqdm.auto import tqdm
 from utils import get_metadata, unjam_traffic, SPAWN_POINTS
 
 
-def setup_and_load_scenario():
+def setup_and_load_scenario(fov, resolution):
     spawnpoint = itertools.cycle(SPAWN_POINTS[curr_map])
     scenario = Scenario(curr_map, f'{curr_map}_dataset')
 
@@ -18,8 +18,8 @@ def setup_and_load_scenario():
     pos, rot = SPAWN_POINTS[curr_map][next(spawnpoint)]
     scenario.add_vehicle(ego, pos=pos, rot_quat=rot)
 
-    camera = Camera((-0.3, 1.15, 1), (0, 1, 0), 70,
-                    (2048, 1024), colour=True, annotation=True)
+    camera = Camera((-0.3, 1.15, 1), (0, 1, 0), fov,
+                    resolution, colour=True, annotation=True)
     electrics = Electrics()
     timer = Timer()
 
@@ -50,13 +50,17 @@ if __name__ == '__main__':
     # max steps without moving at least the minimal distance to reset traffic
     MAX_STEPS_WITHOUT_MOVING = 5
     STEPS_BETWEEN_CAPTURES = 60  # 1 step is 1/34 s, approximately 29.5 ms
+    EGO_SPEED_KPH = 80  # the vehicle max speed
+
+    CAMERA_FOV = 70  # field-of-view in degrees
+    CAMERA_RESOLUTION = (2048, 1024) # resolution of the camera images in pixels
 
     for curr_map in MAPS_TO_GENERATE:
         print(f'Generating annotated images for {curr_map}...')
-        ego = setup_and_load_scenario()
+        ego = setup_and_load_scenario(CAMERA_FOV, CAMERA_RESOLUTION)
         ego.ai_set_mode('span')
         ego.ai_drive_in_lane(True)
-        ego.ai_set_speed(80 / 3.6, mode='limit')
+        ego.ai_set_speed(EGO_SPEED_KPH / 3.6, mode='limit')
 
         cam_dir = Path(f'images/{curr_map}/camera')
         ann_dir = Path(f'images/{curr_map}/annotation')
