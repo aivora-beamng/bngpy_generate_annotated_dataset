@@ -1,5 +1,8 @@
+from itertools import cycle
+
 from beamngpy import BeamNGpy, Vehicle
 
+# just a list of spawnpoint positions taken from the game
 SPAWN_POINTS = dict(italy={
     'village_mountain': ([262.389404, -891.666626, 246.920883], (0, 0, 0.793353388, 0.608761367)),
     'airport': ([-1045.27136, 1636.64014, 152.583511], (0, 0, 0.995607359, -0.0936268447)),
@@ -18,12 +21,19 @@ SPAWN_POINTS = dict(italy={
 })
 
 
-def unjam_traffic(beamng: BeamNGpy, ego: Vehicle, map: str, spawnpoint_iter, jammed):
+def spawn_traffic(beamng: BeamNGpy):
+    command = '''
+extensions.gameplay_traffic.setupTraffic()
+extensions.hook("startTracking", ({Name = "TrafficEnabled"}))
+'''
+    beamng.queue_lua_command(command)
+
+
+def unjam_traffic(beamng: BeamNGpy, ego: Vehicle, map: str, spawnpoint_iter: cycle[str], jammed: bool):
     beamng.queue_lua_command('gameplay_traffic.forceTeleportAll()')
     data = ego.sensors['state'].data
     if not jammed:  # repair/reset ego
-        beamng.teleport_vehicle(
-            ego.vid, pos=data['pos'], rot_quat=data['rotation'])
+        beamng.teleport_vehicle(ego.vid, pos=data['pos'], rot_quat=data['rotation'])
     else:  # already jammed in this position, respawn
         next_spawnpoint = next(spawnpoint_iter)
         print(f'Changing spawn point to \'{next_spawnpoint}\'')
