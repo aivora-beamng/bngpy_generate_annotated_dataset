@@ -48,7 +48,7 @@ def setup_and_load_scenario(fov: int, resolution: Tuple[int, int]) -> Tuple[Vehi
 
 
 if __name__ == '__main__':
-    beamng = BeamNGpy('localhost', 64256, home=r'T:\BeamNG\BeamNG.tech.v0.25.5.0')
+    beamng = BeamNGpy('localhost', 64256)
     beamng.open()
 
     MAPS_TO_GENERATE = ['italy', 'east_coast_usa']
