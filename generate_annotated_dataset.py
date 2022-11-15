@@ -65,6 +65,9 @@ if __name__ == '__main__':
     for curr_map in MAPS_TO_GENERATE:
         print(f'Generating annotated images for {curr_map}...')
         ego, spawnpoint = setup_and_load_scenario(CAMERA_FOV, CAMERA_RESOLUTION)
+
+        input('Press Enter to continue when the scenario is fully loaded...')
+
         ego.ai_set_mode('span')
         ego.ai_drive_in_lane(True)
         ego.ai_set_speed(EGO_SPEED_KPH / 3.6, mode='limit')
