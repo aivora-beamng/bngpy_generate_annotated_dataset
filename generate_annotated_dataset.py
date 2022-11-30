@@ -10,10 +10,10 @@ from beamngpy.sensors import Camera, Electrics, Timer
 from scipy.spatial import distance
 from tqdm.auto import tqdm
 
-from utils import SPAWN_POINTS, get_metadata, spawn_traffic, unjam_traffic
+from utils import SPAWN_POINTS, get_metadata, unjam_traffic
 
 
-def setup_and_load_scenario(fov: int, resolution: Tuple[int, int]) -> Tuple[Vehicle, cycle[str]]:
+def setup_and_load_scenario(fov: int, resolution: Tuple[int, int]) -> Tuple[Vehicle, Camera, cycle[str]]:
     spawnpoint = cycle(SPAWN_POINTS[curr_map])
     scenario = Scenario(curr_map, f'{curr_map}_dataset')
 
@@ -21,30 +21,30 @@ def setup_and_load_scenario(fov: int, resolution: Tuple[int, int]) -> Tuple[Vehi
     pos, rot = SPAWN_POINTS[curr_map][next(spawnpoint)]
     scenario.add_vehicle(ego, pos=pos, rot_quat=rot)
 
-    camera = Camera((-0.3, 1.15, 1), (0, 1, 0), fov,
-                    resolution, colour=True, annotation=True)
-    electrics = Electrics()
-    timer = Timer()
-
-    ego.attach_sensor('camera', camera)
-    ego.attach_sensor('electrics', electrics)
-    ego.attach_sensor('timer', timer)
+    ego.sensors.attach('electrics', Electrics())
+    ego.sensors.attach('timer', Timer())
 
     scenario.make(beamng)
 
     print('Loading scenario...')
-    beamng.load_scenario(scenario)
+    beamng.scenario.load(scenario)
     beamng.pause()
-    beamng.start_scenario()
+    beamng.scenario.start()
+
+    print('Creating camera...')
+    camera = Camera('camera', beamng, ego, pos=(0, -1.9, 0.9), dir=(0, -1, 0), near_far_planes=(0.01, 1000),
+                    field_of_view_y=fov, resolution=resolution, is_render_colours=True, is_render_annotations=True,
+                    is_using_shared_memory=False, is_render_depth=False, update_priority=1, is_visualised=False)
 
     print('Spawning traffic...')
-    spawn_traffic(beamng)
+    beamng.traffic.spawn()
 
-    beamng.hide_hud()
-    beamng.set_steps_per_second(34)
-    beamng.set_deterministic()
+    beamng.ui.hide_hud()
+    beamng.settings.set_deterministic()
+    beamng.settings.set_steps_per_second(34)
+    beamng.control.step(34)
 
-    return ego, spawnpoint
+    return ego, camera, spawnpoint
 
 
 if __name__ == '__main__':
@@ -64,13 +64,13 @@ if __name__ == '__main__':
 
     for curr_map in MAPS_TO_GENERATE:
         print(f'Generating annotated images for {curr_map}...')
-        ego, spawnpoint = setup_and_load_scenario(CAMERA_FOV, CAMERA_RESOLUTION)
+        ego, camera, spawnpoint = setup_and_load_scenario(CAMERA_FOV, CAMERA_RESOLUTION)
 
         input('Press Enter to continue when the scenario is fully loaded...')
 
-        ego.ai_set_mode('span')
-        ego.ai_drive_in_lane(True)
-        ego.ai_set_speed(EGO_SPEED_KPH / 3.6, mode='limit')
+        ego.ai.set_mode('span')
+        ego.ai.drive_in_lane(True)
+        ego.ai.set_speed(EGO_SPEED_KPH / 3.6, mode='limit')
 
         cam_dir = Path(f'images/{curr_map}/camera')
         ann_dir = Path(f'images/{curr_map}/annotation')
@@ -87,10 +87,10 @@ if __name__ == '__main__':
         with tqdm(total=IMGS_PER_MAP) as pbar:
             pbar.update(i)
             while i < IMGS_PER_MAP:
-                ego.poll_sensors()
-                pos = ego.sensors['state'].data['pos']
-                cam_data = ego.sensors['camera'].data
-                beamng.step(STEPS_BETWEEN_CAPTURES)
+                ego.sensors.poll()
+                pos = ego.sensors['state']['pos']
+                cam_data = camera.poll()
+                beamng.control.step(STEPS_BETWEEN_CAPTURES)
                 cam_data['colour'].convert('RGB').save(Path(cam_dir, f'{curr_map}_{i:06}.png'))
                 cam_data['annotation'].save(Path(ann_dir, f'{curr_map}_{i:06}_annotation.png'))
                 with open(Path(metadata_dir, f'{curr_map}_{i:06}_metadata.json'), 'w') as file:
@@ -109,6 +109,7 @@ if __name__ == '__main__':
                 if steps_without_moving_left == 0:
                     print(f'Traffic jam detected at iteration {i:06}, resetting traffic vehicles...')
                     steps_without_moving_left = MAX_STEPS_WITHOUT_MOVING + 1
+
                     unjam_traffic(beamng, ego, curr_map, spawnpoint, jammed)
                     jammed = True
                 last_pos = pos
