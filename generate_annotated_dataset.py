@@ -16,9 +16,10 @@ from utils import SPAWN_POINTS, get_metadata, unjam_traffic
 
 
 class Generator:
-    def __init__(self, beamng: BeamNGpy, imgs_per_map: int, jam_dist: float, jam_steps: int, steps_per_second: int, capture_steps: int,
-                 ego_speed_kph: float, camera_fov: int, camera_pos: List[float], camera_res: List[int], change_tod: bool,
+    def __init__(self, beamng: BeamNGpy, experiment_name: str, imgs_per_map: int, jam_dist: float, jam_steps: int, steps_per_second: int,
+                 capture_steps: int, ego_speed_kph: float, camera_fov: int, camera_pos: List[float], camera_res: List[int], change_tod: bool,
                  initial_time: str, **kwargs):
+        self.experiment_name = experiment_name
         self.beamng = beamng
         self.imgs = imgs_per_map
         self.jam_dist = jam_dist
@@ -89,10 +90,10 @@ class Generator:
         ego.ai.drive_in_lane(True)
         ego.ai.set_speed(self.speed / 3.6, mode='limit')
 
-        cam_dir = Generator.create_dir(f'images/{map}/camera')
-        ann_dir = Generator.create_dir(f'images/{map}/annotation')
-        depth_dir = Generator.create_dir(f'images/{map}/depth')
-        metadata_dir = Generator.create_dir(f'images/{map}/metadata')
+        cam_dir = Generator.create_dir(f'{self.experiment_name}/images/{map}/camera')
+        ann_dir = Generator.create_dir(f'{self.experiment_name}/images/{map}/annotation')
+        depth_dir = Generator.create_dir(f'{self.experiment_name}/images/{map}/depth')
+        metadata_dir = Generator.create_dir(f'{self.experiment_name}/images/{map}/metadata')
 
         steps_without_moving_left = self.jam_steps
         jammed = False
@@ -138,6 +139,8 @@ if __name__ == '__main__':
     parser.add_argument('--host', type=str, default='localhost', help='BeamNG hostname.')
     parser.add_argument('--port', type=int, default=64256, help='BeamNG hostname.')
 
+    parser.add_argument('--experiment-name', type=str, default='dataset',
+                        help='The experiment name and the output folder used.')
     parser.add_argument('--maps', nargs='+', type=str,
                         default=['italy', 'east_coast_usa'], help='List of maps to generate images for.')
     parser.add_argument('--imgs-per-map', type=int, default=1000, help='Number of images generated between maps.')
@@ -163,6 +166,10 @@ if __name__ == '__main__':
 
     print('Running with args: ')
     print(args)
+
+    experiment_dir = Generator.create_dir(args.experiment_name)
+    with open(experiment_dir / 'parameters.json', 'w') as param_file:
+        json.dump(vars(args), param_file, indent=4)
 
     beamng = BeamNGpy(args.host, args.port)
     beamng.open()
