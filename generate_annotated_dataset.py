@@ -67,10 +67,7 @@ class Generator:
         print('Creating camera...')
         camera = Camera('camera', beamng, ego, pos=self.camera_pos, dir=(0, -1, 0), near_far_planes=(0.01, 1000),
                         field_of_view_y=self.fov, resolution=self.camera_res, is_render_colours=True, is_render_annotations=True,
-                        is_render_instance=False, is_using_shared_memory=False, is_render_depth=True, update_priority=1, is_visualised=False)
-
-        print('Setting environment...')
-        beamng.env.set_tod(tod=self.initial_time, play=self.change_tod)
+                        is_render_instance=False, is_using_shared_memory=True, is_render_depth=True, update_priority=1, is_visualised=False)
 
         print('Spawning traffic...')
         beamng.traffic.spawn()
@@ -85,6 +82,9 @@ class Generator:
         ego, camera, spawnpoint = self.setup_and_load_scenario(map)
 
         input('Press Enter to continue when the scenario is fully loaded...')
+
+        print('Setting environment...')
+        beamng.env.set_tod(tod=self.initial_time, play=self.change_tod)
 
         ego.ai.set_mode('span')
         ego.ai.drive_in_lane(True)
@@ -155,7 +155,7 @@ if __name__ == '__main__':
     parser.add_argument('--ego-speed-kph', type=float, default=80, help='Maximal speed of the camera vehicle.')
     parser.add_argument('--camera-fov', type=int, default=70, help='Field-of-view of the camera, in degrees.')
     parser.add_argument('--camera-pos', type=float, nargs=3,
-                        default=[0, -1.9, 0.9], help='Position of the camera, relative to the vehicle.')
+                        default=[0, -1.9, 0.95], help='Position of the camera, relative to the vehicle.')
     parser.add_argument('--camera-res', type=int, nargs=2,
                         default=[2048, 1024], help='The resolution of the camera (WIDTH, HEIGHT) in pixels.')
     parser.add_argument('--initial-time', type=str, default='14:00:00', help='Initial time of the simulation.')
