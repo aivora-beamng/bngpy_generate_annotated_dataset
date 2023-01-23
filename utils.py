@@ -39,10 +39,16 @@ def unjam_traffic(beamng: BeamNGpy, ego: Vehicle, map: str, spawnpoint_iter: cyc
     beamng.control.queue_lua_command('bullettime.pause(false)')
 
 
-def get_metadata(ego: Vehicle) -> Dict[str, Any]:
+def get_metadata(beamng: BeamNGpy, ego: Vehicle) -> Dict[str, Any]:
+    tod = beamng.env.get_tod()['timeStr']
+
     return {
-        'pos': ego.sensors['state']['pos'],
-        'rot': ego.sensors['state']['rotation'],
-        'time': ego.sensors['timer']['time'],
+        'pos': ego.state['pos'],
+        'rot': ego.state['rotation'],
+        'time': tod,
+        'scenario_time': ego.sensors['timer']['time'],
+        'throttle': ego.sensors['electrics']['throttle'],
+        'brake': ego.sensors['electrics']['brake'],
+        'speed': ego.sensors['electrics']['wheelspeed'],
         'electrics': ego.sensors['electrics']
     }
