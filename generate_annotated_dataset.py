@@ -18,7 +18,7 @@ from utils import SPAWN_POINTS, get_metadata, unjam_traffic
 class Generator:
     def __init__(self, beamng: BeamNGpy, experiment_name: str, imgs_per_map: int, jam_dist: float, jam_steps: int, steps_per_second: int,
                  capture_steps: int, ego_speed_kph: float, camera_fov: int, camera_pos: List[float], camera_res: List[int], change_tod: bool,
-                 initial_time: str, **kwargs):
+                 initial_time: str, day_length: float, **kwargs):
         self.experiment_name = experiment_name
         self.beamng = beamng
         self.imgs = imgs_per_map
@@ -32,6 +32,7 @@ class Generator:
         self.camera_res = tuple(camera_res)
         self.change_tod = change_tod
         self.initial_time = initial_time
+        self.day_length = day_length
 
         print('Camera settings:')
         print(f'\tFOV: {self.fov} deg\n\tRES: {self.camera_res}')
@@ -84,7 +85,7 @@ class Generator:
         input('Press Enter to continue when the scenario is fully loaded...')
 
         print('Setting environment...')
-        beamng.env.set_tod(tod=self.initial_time, play=self.change_tod)
+        beamng.env.set_tod(tod=self.initial_time, play=self.change_tod, day_length=self.day_length)
 
         ego.ai.set_mode('span')
         ego.ai.drive_in_lane(True)
@@ -139,11 +140,11 @@ if __name__ == '__main__':
     parser.add_argument('--host', type=str, default='localhost', help='BeamNG hostname.')
     parser.add_argument('--port', type=int, default=64256, help='BeamNG hostname.')
 
-    parser.add_argument('--experiment-name', type=str, default='dataset',
+    parser.add_argument('--experiment-name', type=str, default='dataset-big',
                         help='The experiment name and the output folder used.')
     parser.add_argument('--maps', nargs='+', type=str,
                         default=['italy', 'east_coast_usa'], help='List of maps to generate images for.')
-    parser.add_argument('--imgs-per-map', type=int, default=1000, help='Number of images generated between maps.')
+    parser.add_argument('--imgs-per-map', type=int, default=10000, help='Number of images generated between maps.')
     parser.add_argument('--jam-dist', type=float, default=0.2,
                         help='Distance in meters to detect a traffic jam.'
                              'If the vehicle is moving less than this value for \'--jam-steps\', then a traffic jam is detected.')
@@ -161,6 +162,8 @@ if __name__ == '__main__':
     parser.add_argument('--initial-time', type=str, default='14:00:00', help='Initial time of the simulation.')
     parser.add_argument('--change-tod', action='store_false',
                         help='Change the time of day during the simulation.')
+    parser.add_argument('--day-length', type=float, default=21600,
+                        help='The length of day during the simulation.')
 
     args = parser.parse_args()
 
@@ -178,3 +181,4 @@ if __name__ == '__main__':
 
     for map in args.maps:
         generator.generate_images(map)
+    beamng.close()
